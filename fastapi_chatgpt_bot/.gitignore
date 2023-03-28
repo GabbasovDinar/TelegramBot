@@ -1,0 +1,7 @@
+# .gitignore
+
+# Compiled Python files
+*.pyc
+
+# Environment variables
+.env
