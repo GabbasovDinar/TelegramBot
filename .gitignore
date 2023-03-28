@@ -4,4 +4,4 @@
 *.pyc
 
 # Environment variables
-.env
+fastapi_chatgpt_bot/.env
