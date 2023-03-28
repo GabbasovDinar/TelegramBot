@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://chatbot_user:chatbot_password@db/chatbot_db
+    volumes:
+      - .:/app
+    command: python app/main.py
+
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+      - POSTGRES_USER=chatbot_user
+      - POSTGRES_PASSWORD=chatbot_password
+      - POSTGRES_DB=chatbot_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
