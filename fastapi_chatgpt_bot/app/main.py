@@ -4,15 +4,16 @@ import uuid
 
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.types import BotCommand
 
-from config import TELEGRAM_MAIN_BOT_TOKEN, TELEGRAM_ADMIN_BOT_TOKEN, OPENAI_API_KEY, TELEGRAM_ADMIN_USER_ID, TELEGRAM_CHAT_ID
+from config import TELEGRAM_MAIN_BOT_TOKEN, TELEGRAM_ADMIN_BOT_TOKEN, OPENAI_API_KEY, TELEGRAM_ADMIN_USER_ID
 from crud import add_message, check_user_password, create_user, get_user_by_telegram_id
 from openai_agent import OpenAIAgent
 from audio_to_text import audio_to_text
-from database import session_scope
+from database import session_scope, engine
+from models import Base
 
 logging.basicConfig(level=logging.INFO)
-_logger = logging.getLogger(__name__)
 
 # main bot
 bot = Bot(token=TELEGRAM_MAIN_BOT_TOKEN)
@@ -26,12 +27,14 @@ admin_dp.middleware.setup(LoggingMiddleware())
 
 # create OpenAI agent
 openai_agent = OpenAIAgent(api_key=OPENAI_API_KEY)
-
-
-from database import engine
-from models import Base
-
+# create db tables
 Base.metadata.create_all(bind=engine)
+
+# add available bot commands
+commands = [
+    BotCommand(command="/start", description="Start the bot"),
+    BotCommand(command="/help", description="Show the bot's help message"),
+]
 
 # ===========================================
 # ========== Handlers for Main Bot ==========
@@ -40,6 +43,9 @@ Base.metadata.create_all(bind=engine)
 
 @dp.message_handler(commands=["start", "help"])
 async def handle_start_help(message: types.Message):
+    # set commands
+    await bot.set_my_commands(commands)
+    # send welcome message
     await bot.send_message(
         message.chat.id,
         "Available commands:\n\n"
