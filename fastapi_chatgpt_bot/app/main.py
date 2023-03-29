@@ -34,6 +34,7 @@ Base.metadata.create_all(bind=engine)
 commands = [
     BotCommand(command="/start", description="Start the bot"),
     BotCommand(command="/help", description="Show the bot's help message"),
+    BotCommand(command="/reset_context", description="Reset the conversation context with the ChatGPT"),
 ]
 
 # ===========================================
@@ -41,19 +42,45 @@ commands = [
 # ===========================================
 
 
-@dp.message_handler(commands=["start", "help"])
-async def handle_start_help(message: types.Message):
+@dp.message_handler(commands=["start"])
+async def handle_start(message: types.Message):
+    # Check user access
+    with session_scope() as db_session:
+        user = get_user_by_telegram_id(db_session, str(message.from_user.id))
+        if not user or not user.active:
+            await message.reply(
+                "You do not have access. Check the instructions on how to activate the bot with the /help command.",
+            )
+            return False
     # set commands
     await bot.set_my_commands(commands)
     # send welcome message
     await bot.send_message(
         message.chat.id,
-        "Available commands:\n\n"
-        "/start - Start the bot\n"
-        "/help - Show this help message\n"
-        "/password <password> - Check if the user has access to the bot\n"
-        "/reset_context - Reset the conversation context with the ChatGPT",
+        "Welcome to the ChatGPT bot, you can write any message and the bot will reply to you. \n"
+        "To view available commands, please type /help or press the menu button."
     )
+
+
+@dp.message_handler(commands=["help"])
+async def handle_help(message: types.Message):
+    with session_scope() as db_session:
+        user = get_user_by_telegram_id(db_session, str(message.from_user.id))
+        if not user:
+            # TODO: отправить запрос админ боту на создания пользователя с указынными данными ID логин
+            help_message = ""
+        elif not user.active:
+            # TODO: отправить запрос админ боту на активацию пользователя с указынными данными ID логин
+            help_message = ""
+        else:
+            help_message = "Available commands:\n\n" \
+                "/start - Start the bot\n " \
+                "/help - Show this help message\n " \
+                "/password <password> - Check if the user has access to the bot\n" \
+                " /reset_context - Reset the conversation context with the ChatGPT"
+
+    # send welcome message
+    await bot.send_message(message.chat.id, help_message)
 
 
 @dp.message_handler(lambda message: message.text.startswith("/password"))
